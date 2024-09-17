@@ -1,0 +1,46 @@
+---
+title: "TCR_T_sub2"
+author: "Zhu Ni"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## 1.Load dataset
+```{r}
+library(Seurat)
+library(scRepertoire)
+
+sc <- readRDS("../sce/sce_subclusters/sce_T_sub2.rds")
+
+id2sample <- data.frame(id = c("P08", "P09", "P10", "P11", "P12", "P13", "P14", "P15", "P16", "P17", "N3", "N4", "N5", "N6", "N7"), sample = c("Normal_Patient1", "Normal_Patient2", "Normal_Patient3", "Normal_Patient4","Normal_Patient5", "Normal_Patient6", "Normal_Patient7", "Normal_Patient8", "Normal_Patient9", "Normal_Patient10", "CASH_Patient1", "CASH_Patient2", "CASH_Patient3", "CASH_Patient4", "CASH_Patient5"))
+
+file.list <- list.files("./rawData/")
+tcr <- list()
+for (file in file.list){
+  sample <- strsplit(file, "[\\._]")[[1]][1]
+  if (sample %in% id2sample$id){
+    sample <- id2sample[id2sample$id == sample, "sample"]
+  }
+  tcr[[sample]] <- read.csv(paste("rawData", file, sep = "/"))
+}
+
+Subset_color_panel <- c(
+  # T
+  "0" = "#a82d06",
+  "1" = "#4592bf",
+  "2" = "#d38219",
+  "3" = "#74a764",
+  "4" = "#8ca2b4",
+  "5" = "#cbb190",
+  "6" = "#e7ca8d",
+  "7" = "#9d9ec3",
+  "8" = "#593202",
+  # ASC
+  "9" = "#ebafa4",
+  "10" = "#5e8a89",
+  "11" = "#ecd577",
+  "12" = "#7c606c",
+  "13" = "#5c6489"
+)
+```
+

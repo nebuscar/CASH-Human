@@ -47,3 +47,26 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+
+###### define by myself ######
+
+*.rds
+*.h5ad
+*.loom
+
+*.tsv
+*.csv
+*.xlsx
+
+*.txt
+
+*.pdf
+*.html
+*.png
+
+
+
+
+
+

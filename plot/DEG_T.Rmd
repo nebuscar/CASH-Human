@@ -1,0 +1,123 @@
+---
+title: "DEG_T"
+author: "Zhu Ni"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Load Data
+```{r}
+library(Seurat)
+library(RcppML)
+library(irGSEA)
+library(fgsea)
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(msigdb)
+library(GSEABase)
+library(ggplot2)
+
+sce_Tcell_TCR <- readRDS("./tmp/sc_Tcell_TCR.rds")
+Idents(sce_Tcell_TCR) <- "RNA_snn_res.0.6"
+```
+
+# Subset
+```{r}
+clusters <- c("1","2")
+clonesize <- c("Large (0.01 < X <= 0.1)", "Medium (0.001 < X <= 0.01)")
+meta.list <- list()
+sce_sub_Tcell.list <- list()
+
+for (cluster in clusters){
+  print(cluster)
+  meta.list[[cluster]] <- subset(sce_Tcell_TCR@meta.data, RNA_snn_res.0.6 %in% cluster & cloneSize %in% clonesize)
+  sce_sub_Tcell.list[[cluster]] <- sce_Tcell_TCR[, colnames(sce_Tcell_TCR) %in% rownames(meta.list[[cluster]])]
+}
+```
+
+# irGSEA
+```{r}
+result.dge.list <- list()
+for (cluster in clusters) {
+  print(cluster)
+  sce_sub_Tcell.list[[cluster]] <- irGSEA.score(object = sce_sub_Tcell.list[[cluster]],assay = "RNA",
+                             slot = "counts", seeds = 42, ncores = 1,
+                             min.cells = 3, min.feature = 0,
+                             custom = F, geneset = NULL, msigdb = T,
+                             species = "Homo sapiens", category = "H",
+                             subcategory = NULL, geneid = "symbol",
+                             method = c("AUCell","UCell","singscore"),
+                             aucell.MaxRank = NULL, ucell.MaxRank = NULL,
+                             kcdf = 'Gaussian')
+  result.dge.list[[cluster]] <- irGSEA.integrate(sce_sub_Tcell.list[[cluster]],
+                                                 group.by = "group",
+                                                 method = "AUCell",
+  )
+  }
+saveRDS(result.dge.list, "../Projects/results/irGSEA/result.dge.list_CASH_Normal.rds")
+```
+
+# Barplot
+``````{r}
+top10.list <- list()
+plot.list <- list()
+clusters <- c("1","2")
+for (cluster in clusters) {
+  top10_up <- result.dge.list[[cluster]]$AUCell %>%
+    filter(cluster == "CASH") %>% 
+    filter(direction == "up") %>%
+    arrange(desc(avg_diff)) %>%
+    head(10)
+  
+  top10_down <- result.dge.list[[cluster]]$AUCell %>%
+    filter(cluster == "CASH") %>% 
+    filter(direction == "down") %>%
+    arrange(desc(avg_diff)) %>%
+    head(10)
+  
+  top10_combined <- bind_rows(top10_up, top10_down)
+  
+  top10_combined <- top10_combined %>%
+    mutate(log10p = -log10(abs(avg_diff)),
+           annotation = direction)
+  top10_combined$log10p <- ifelse(top10_combined$direction == "up", 
+                                  top10_combined$log10p, 
+                                  top10_combined$log10p * -1)
+  top10_combined <- top10_combined %>%
+    mutate(Name = stringr::str_wrap(Name, width = 20))
+  top10.list[[cluster]] <- top10_combined
+  #ggplot
+  plot.list[[cluster]] <- ggplot(top10.list[[cluster]]) +
+    geom_bar(aes(x = reorder(Name, log10p), y = log10p, fill = annotation),
+             stat = "identity", color = "white") +
+    geom_text(aes(x = reorder(Name, log10p), y = 0, label = Name),
+              size = 7 * 0.35, angle = 0) +
+    # hjust = ifelse(top10_combined$log10p > 0, -0.1, 1.1)) + 
+    scale_fill_manual(name = "", values = c("down" = "#0f7b9f", "up" = "#d83215")) +
+    coord_flip() +
+    cowplot::theme_cowplot() +
+    theme(
+      axis.text.x = element_text(size = 7),
+      text = element_text(size = 7),
+      axis.line = element_line(size = 0.3),
+      axis.ticks = element_line(size = 0.3),
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      axis.line.y = element_blank(),
+      panel.border = element_blank(),
+      legend.position = "right") +
+    labs(x = "", y = "-log10(avg_diff)", 
+         title = paste("Top 10 Upregulated and Downregulated Pathways in CASH_cluster", cluster))
+}
+
+for (cluster in clusters) {
+  print(plot.list[[cluster]])
+}
+
+cluster1 <- table(sce_sub_Tcell.list[[1]]@meta.data$cloneSize, sce_sub_Tcell.list[[1]]@meta.data$group)
+cluster2 <- table(sce_sub_Tcell.list[[2]]@meta.data$cloneSize, sce_sub_Tcell.list[[2]]@meta.data$group)
+print(cluster1)
+print(cluster2)
+```
+
