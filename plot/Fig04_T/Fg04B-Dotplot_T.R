@@ -54,5 +54,5 @@ p <- DotPlot(T_obj, features = markers_list, dot.scale = 4) +
   ) +
   labs(x = "", y = "")
 print(p)
-ggsave("./fig/Fig04.T/Fig4B.Dotplot_T.pdf", plot = p, width = 16, height = 8, dpi = 300)
-ggsave("./fig/Fig04.T/Fig4B.Dotplot_T.png", plot = p, width = 16, height = 8, dpi = 300)
+ggsave("./fig/Fig04.T/Fig4B.Dotplot_T.pdf", plot = p, width = 16, height = 8, dpi = 500)
+ggsave("./fig/Fig04.T/Fig4B.Dotplot_T.png", plot = p, width = 16, height = 8, dpi = 500)

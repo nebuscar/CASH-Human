@@ -60,18 +60,22 @@ p1 <- ggplot(plot_df, aes(x = avg_log2FC, y = -log10(p_val_adj), color = group))
 
 ## significant markers
 sig_markers <- subset(plot_df, plot_df$p_val_adj < padj & abs(plot_df$avg_log2FC) >= log2FC)
-top10_c06 <- sig_markers %>%
-  filter(group == "c07_Macrophage_MARCO") %>%
-  arrange(desc(avg_log2FC)) %>%
-  head(10)
-top10_c03 <- sig_markers %>%
-  filter(group == "c06_Macrophage_") %>%
-  arrange(avg_log2FC) %>%
-  head(10)
-top20 <- rbind(top10_c06, top10_c03)
-
+# top10_c06 <- sig_markers %>%
+#   filter(group == "c07_Macrophage_MARCO") %>%
+#   arrange(desc(avg_log2FC)) %>%
+#   head(10)
+# top10_c03 <- sig_markers %>%
+#   filter(group == "c06_Macrophage_") %>%
+#   arrange(avg_log2FC) %>%
+#   head(10)
+# top20 <- rbind(top10_c06, top10_c03)
+top20 <- c("TIMD4", "CETP", "MARCO", "IFI27", "FABP3", "BCAM",
+           "CD5L", "NDST3", "VCAM1", "C2", "AHNAK", "CLEC4A",
+           "CSF2RA", "LAT2", "MNDA", "JAML", "GPR183", "LSP1",
+           "FCGR2B", "PLD4")
+tmp <- sig_markers[rownames(sig_markers) %in% top20, ]
 ## Add labels to the plot
-p2 <- p1 + ggrepel::geom_text_repel(data = top20, aes(label = rownames(top20)), 
+p2 <- p1 + ggrepel::geom_text_repel(data = tmp, aes(label = rownames(tmp)), 
                                     size = 3,                                    
                                     color = "black",
                                     fontface = "bold.italic",
@@ -79,8 +83,7 @@ p2 <- p1 + ggrepel::geom_text_repel(data = top20, aes(label = rownames(top20)),
                                     point.padding = unit(1, "lines"), 
                                     segment.color = "black", 
                                     show.legend = F,
-                                    max.overlaps = 20
-                                    )
+                                    max.overlaps = 20)
 print(p2)
 ggsave("./fig/Fig02.Myeloid/Fig2F.DEGs_Volcano_Myeloid.pdf", plot = p2, width = 6, height = 6)
 ggsave("./fig/Fig02.Myeloid/Fig2F.DEGs_Volcano_Myeloid.png", plot = p2, width = 6, height = 6)
