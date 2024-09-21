@@ -18,7 +18,7 @@ dir_for_meta_tcr <- "./data/tcr/meta_tcr.rds"
 
 ## loda data
 T_obj <- readRDS(dir_for_T_obj)
-Idents(T_obj) <- "RNA_snn_res.0.7"
+Idents(T_obj) <- "sub_celltype"
 meta_tcr <- readRDS(dir_for_meta_tcr)
 ## match meta
 meta_match <- meta_tcr[match(rownames(T_obj@meta.data), rownames(meta_tcr)),]

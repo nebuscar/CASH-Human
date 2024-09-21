@@ -37,7 +37,7 @@ p <- ggplot(meta, aes(x = UMAP1, y = UMAP2, color = celltype)) +
   scale_color_manual(values = celltype_color_panel, name = '') +
   theme(
     ## border
-    panel.border = element_rect(color = "black", fill = NA, size = 1),
+    # panel.border = element_rect(color = "black", fill = NA, size = 1),
     
     ## legend
     aspect.ratio = 1, 
@@ -51,9 +51,9 @@ p <- ggplot(meta, aes(x = UMAP1, y = UMAP2, color = celltype)) +
     override.aes = list(size = 5, alpha = 1)))
 print(p)
 ggsave("./fig/Fig01.All/Fig1C.Dimplot_major.pdf", plot = p, 
-       width = 8, height = 8, dpi = 300)
+       width = 5, height = 5, dpi = 300)
 ggsave("./fig/Fig01.All/Fig1C.Dimplot_major.png", plot = p, 
-       width = 8, height = 8, dpi = 300)
+       width = 5, height = 5, dpi = 300)
 
 ########## Fig01D.Dotplot ##########
 ## markers
@@ -86,7 +86,7 @@ p <- DotPlot(all_obj, features = markers_list, dot.scale = 4) +
     text = element_text(size = 0),
     
     ## facet
-    strip.text = element_text(size = 6),
+    strip.text = element_text(size = 8),
     strip.background = element_blank(),
     
     ## panel
@@ -94,7 +94,7 @@ p <- DotPlot(all_obj, features = markers_list, dot.scale = 4) +
     panel.spacing = unit(x = 0.2, units = "lines"),
     panel.background = element_rect(colour = "black", fill = "white"),
     panel.grid = element_line(colour = "grey", linetype = "dashed", linewidth = 0.3),
-    panel.border = element_rect(colour = "black", fill = NA, size = 0.3),
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.3),
     
     ## legend
     legend.title = element_text(size = 8),
@@ -102,8 +102,8 @@ p <- DotPlot(all_obj, features = markers_list, dot.scale = 4) +
     legend.key.size = unit(0.15, "inch"),
     legend.position = "bottom")
 print(p)
-ggsave("./fig/Fig01.All/Fig1D.Dotplot_major.pdf", plot = p, width = 8.5, height = 4, dpi = 300)
-ggsave("./fig/Fig01.All/Fig1D.Dotplot_major.png", plot = p, width = 8.5, height = 4, dpi = 300)
+ggsave("./fig/Fig01.All/Fig1D.Dotplot_major.pdf", plot = p, width = 8, height = 4, dpi = 300)
+ggsave("./fig/Fig01.All/Fig1D.Dotplot_major.png", plot = p, width = 8, height = 4, dpi = 300)
 
 ########## Fig01E.Pct_bar_plot ##########
 # 3. plot

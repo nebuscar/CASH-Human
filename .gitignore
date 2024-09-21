@@ -55,6 +55,8 @@ rsconnect/
 *.h5ad
 *.loom
 
+*.zip
+
 *.tsv
 *.csv
 *.xlsx
