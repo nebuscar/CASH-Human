@@ -23,43 +23,7 @@ Subset_color_panel <- c(
   "c10_cDC2" = "#958056",
   "c11_cDC2" = "#6F99AD",
   "c12_pDC" = "#0072B5",
-  "c13_Actived_DC" = "#CFC59A",
-  
-  # T cells
-  "c14_CD8_MAIT" = "#5A7B8F",
-  "c15_CD8_MAIT" = "#EE4C97",
-  "c16_CD8_MAIT" = "#3D806F",
-  "c17_CD8_" = "#A08634",
-  "c18_CD8_" = "#F37C95",
-  "c19_CD8_" = "#608541",
-  "c20_CD8_" = "#7D4E57",
-  "c21_CD8_" = "#BC3C29",
-  "c22_CD8_" = "#958056",
-  "c23_CD4_Naïve" = "#9FAFA3",
-  "c24_CD4_" = "#6F99AD",
-  "c25_CD4_" = "#0072B5",
-  "c26_CD4_Treg" = "#CFC59A",
-  "c27_gdT" = "#E18727",
-  
-  # NK cells
-  "c28_NK_CD160" = "#E18727FF", 
-  "c29_NK_NFKBIA" = "#7876B1FF",
-  "c30_NK_DNAJB1" = "red",
-  "c31_NK_CCL4" = "#7D4E57",
-  "c32_NK_CREM" = "#0072B5FF", 
-  "c33_NK_IL32" = "#20854EFF",
-  "c34_NK_CX3CR1" = "black", 
-  
-  
-  
-  # B cells
-  "c35_PC" = "#E18727FF", 
-  "c36_Bn_TCL1A" = "#0072B5FF", 
-  "c37_classical-Bm_GRP183" = "#20854EFF",
-  "c38_classical-Bm_TXNIP" = "#7876B1FF",
-  "c39_ABC_FGR" = "black", 
-  "c40_Bgc_MKI67" = "red"
-)
+  "c13_Actived_DC" = "#CFC59A")
 ## load data
 Myeloid_obj <- readRDS(dir_for_Myeloid_obj)
 meta <- Myeloid_obj@meta.data
@@ -99,30 +63,34 @@ tmp <- Myeloid_obj@meta.data[, c("sub_celltype", "m1_signature", "m2_signature")
 colnames(tmp) <- c("cluster", "M1 phenotype", "M2 phenotype")
 tmp <- reshape2::melt(tmp, id.var = "cluster", variable.name = "pathway", value.name = "score")
 plot_df <- tmp[tmp$cluster %in% c("c05_Macrophage_", "c06_Macrophage_", "c07_Macrophage_MARCO"),]
-plot_df$cluster <- factor(plot_df$cluster, levels = c("c05_Macrophage_", "c06_Macrophage_", "c07_Macrophage_MARCO"))
-table(plot_df$cluster)
+plot_df$cluster <- factor(plot_df$cluster, levels = c("c06_Macrophage_", "c05_Macrophage_", "c07_Macrophage_MARCO"))
+plot_df$cluster_short <- stringr::str_split(plot_df$cluster, "_", simplify = T)[,1]
+plot_df$cluster_short <- factor(plot_df$cluster_short, levels = c("c06", "c05", "c07"))
+table(plot_df$cluster_short)
 
 ## plot
-p <- ggplot(plot_df, aes(x = cluster, y = score)) + 
-  geom_boxplot(aes(color = cluster), outlier.shape = NA, lwd = 1) +
+p <- ggplot(plot_df, aes(x = cluster_short, y = score)) + 
+  geom_boxplot(aes(color = cluster_short), outlier.shape = NA, lwd = 1) +
   ## calculate sig
   ggsignif::geom_signif(
     comparisons = list(
-      c("c06_Macrophage_", "c07_Macrophage_MARCO"),
-      c("c05_Macrophage_", "c06_Macrophage_"), 
-      c("c05_Macrophage_", "c07_Macrophage_MARCO")),
+      c("c05", "c06"), 
+      c("c05", "c07"),
+      c("c06", "c07")),
     test = function(x, y) wilcox.test(x, y, alternative = "two.sided"),
     map_signif_level = c("***" = 0.001, "**" = 0.01, "*" = 0.05),
     step_increase = 0.1,
     textsize = 4,
     size = 1) +
   facet_wrap(~ pathway, nrow = 1) +
-  scale_color_manual(values = Subset_color_panel) +
+  scale_color_manual(values = c("c05" = "#F37C95",
+                                "c06" = "#A08634",
+                                "c07" = "#7D4E57")) +
   cowplot::theme_cowplot() +
   labs(x = "", y = "Signature expression", title = "") +
   theme(
     ## axis
-    axis.text.x = element_text(size = 14, angle = 90),
+    axis.text.x = element_text(size = 14, angle = 0),
     axis.title.x = element_blank(),
     axis.text.y = element_text(size = 14),
     axis.title.y = element_text(size = 16),

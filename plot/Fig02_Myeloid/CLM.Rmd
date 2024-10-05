@@ -1,0 +1,81 @@
+---
+title: "CLM:GSE136114_matrix_files"
+# runtime: shiny
+output: 
+  html_document:
+    code_folding: show
+    theme:
+      color-contrast-warnings: false
+      bg: "#F5F5F5"
+      fg: "#333333"
+      primary: "#4CAF50"
+      secondary: "#FF9800"
+      base_font:
+        google: "Open Sans"
+      heading_font:
+        google: "Open Sans"
+date: "20240929"
+author: Zhu Ni
+---
+```{r setup, include=FALSE}
+library(knitr)
+opts_knit$set(root.dir = "D:/Projects/CASH-Human/")
+opts_chunk$set(message = FALSE, warning = FALSE)
+setwd("D:/Projects/CASH-Human/")
+getwd()
+```
+
+
+```{r}
+# 1. library
+library(AUCell)
+```
+
+```{r}
+# 2. params
+dir_for_expr <- "./data/expr_matrix/GSE136114_matrix_files.txt"
+dir_for_gtf <- "./data/gtf.rds"
+
+## load data
+expr <- read.csv(dir_for_expr, sep = "\t", row.names = 1)
+rownames(expr) <- substr(rownames(expr), 1, 15)
+```
+
+```{r}
+# 3. convert Ensembl to symbol
+gtf <- readRDS(dir_for_gtf)
+gene_mapping <- gtf[match(rownames(expr), gtf$gene_id),]
+gene_mapping <- na.omit(gene_mapping)
+gene_mapping_unique <- gene_mapping[!duplicated(gene_mapping$gene_name), ]
+expr <- expr[gene_mapping_unique$gene_id, ]
+rownames(expr) <- gene_mapping_unique$gene_name
+rm(gtf, gene_mapping, gene_mapping_unique)
+```
+
+```{r}
+geneSets <- c("TIM4", "ITLN1", "MARCO", "CETP", "IFI27",
+             "NDST3", "ITGAD", "FABP3", "BCAM", "CD5L", 
+             "VCAM1", "C2", "EXT1", "SDC3", "HK3", 
+             "ALDH1A1", "PELATON", "SLC7A8", "RND3", "MT1F")
+geneSets <- intersect(geneSets, row.names(expr))
+length(geneSets)
+
+cells_rankings <- AUCell_buildRankings(as.matrix(expr), plotStats = TRUE)
+cells_AUC <- AUCell_calcAUC(geneSets, cells_rankings)
+auc_scores <- getAUC(cells_AUC)
+```
+
+```{r}
+median_score <- median(auc_scores, na.rm = TRUE)
+group <- factor(ifelse(auc_scores > median_score, "high", "low"), 
+                   levels = c("low", "high"))
+
+#
+expr2 <- data.frame(t(expr), scoreGroup = group)
+expr2 <- expr2[, c(ncol(expr2), 1:(ncol(expr2) - 1))]
+
+print(t(data.frame(sample = rownames(expr2), ScoreGroup = expr2$scoreGroup)))
+```
+
+
+

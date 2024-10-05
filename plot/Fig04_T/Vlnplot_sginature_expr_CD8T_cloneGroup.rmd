@@ -1,14 +1,45 @@
+---
+title: "Vlnplot_signature_expr_CD8T_cloneGroup"
+runtime: shiny
+output: 
+  html_document:
+    code_folding: show
+    theme:
+      color-contrast-warnings: false
+      bg: "#F5F5F5"
+      fg: "#333333"
+      primary: "#4CAF50"
+      secondary: "#FF9800"
+      base_font:
+        google: "Open Sans"
+      heading_font:
+        google: "Open Sans"
+date: "20240921"
+author: Zhu Ni
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_knit$set(root.dir = "D:/Projects/CASH-Human/")
+opts_chunk$set(message = FALSE, warning = FALSE)
 setwd("D:/Projects/CASH-Human/")
+getwd()
+```
+
 # 1. library
+
+```{r}
 library(Seurat)
 library(dplyr)
 library(stringr)
 library(AUCell)
 library(ggplot2)
 library(ggpubr)
+```
 
+# 2. params
 
-# 2.params
+```{r}
 dir_for_T_obj <- "./data/obj/T_obj.rds"
 dir_for_meta_tcr <- "./data/tcr/meta_tcr.rds"
 
@@ -31,44 +62,39 @@ meta_sub <- T_obj@meta.data %>%
   filter((str_detect(sub_celltype, "CD8")))
 CD8T_obj <- T_obj[, colnames(T_obj) %in% rownames(meta_sub)]
 rm(T_obj, meta_tcr, meta_match, meta_sub)
-
+```
 
 # 3. geneSets
+
+```{r}
 geneSets <- list(
-  exhaustion = c("CTLA4", "HAVCR2", "LAG3", "PDCD1", "TIGIT", "TIM3", "TOX"),
+  exhaustion = c("CTLA4", "HAVCR2", "LAG3", "PDCD1", "TIGIT", 
+                 #"TIM3", 
+                 "TOX"),
   effector = c("PRF1", "IFNG", "GNLY", "NKG7", "GZMB", "GZMA", "CST7", "TNFSF10"),
   resident = c("RUNX3", "NR4A1", "CD69", "CXCR6", "NR4A3"))
 markers <- unique(unlist(geneSets))
+```
 
 # 4. AUCell
+
+```{r}
 cells_rankings <- AUCell_buildRankings(CD8T_obj@assays$RNA$data) 
 cells_AUC <- AUCell_calcAUC(geneSets, cells_rankings)
 # cells_AUC2 <- AUCell_run(CD8T_obj@assays$RNA$data, geneSets)
 # score <- as.data.frame(t(getAUC(cells_AUC)))
 CD8T_obj@assays$AUCell <- cells_AUC@assays@data$AUC
+```
 
-
-##########
+```{r}
 scScore <- data.frame(t(CD8T_obj[["AUCell"]]), 
                       cloneGroup = CD8T_obj$cloneGroup)
 scScore <- reshape2::melt(scScore, id.vars = "cloneGroup", variable.name = "AUCell", value.name = "Score")
-scScore %>%
-  ggplot(aes(x = cloneGroup, y = as.numeric(Score), color = cloneGroup)) + 
-  geom_violin(trim = F)+
-  geom_boxplot(width=0.1)+
-  facet_wrap(~ AUCell, scales = "free_y") +
-  stat_compare_means(aes(group = cloneGroup), method = "wilcox.test", label = "p.signif", label.y = 1) +
-  theme(axis.text.x = element_text(angle = 0, hjust=1, size = 8),
-        axis.text.y = element_text(angle = 0, hjust=1, size = 8),
-        # axis.title = element_blank(),
-        legend.position="right",
-        axis.line = element_line(colour = "black"),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank())
+```
 
+# 5. Calculate
 
+```{r}
 ## calculate mean value
 mean_scores <- scScore %>%
   group_by(cloneGroup, AUCell) %>%
@@ -77,6 +103,9 @@ mean_scores <- scScore %>%
 wilcox_tests <- scScore %>%
   group_by(AUCell) %>%
   summarize(p_value = wilcox.test(Score ~ cloneGroup)$p.value)
+```
+
+```{r}
 plots <- list()
 for (aucell in unique(scScore$AUCell)) {
   data_subset <- scScore %>% filter(AUCell == aucell)
@@ -110,6 +139,4 @@ for (aucell in unique(scScore$AUCell)) {
 combined_plot <- patchwork::wrap_plots(plots, ncol = 3)
 print(combined_plot)
 ggsave("./Vlnplot_signature_expr_CD8T_cloneGroup.pdf", combined_plot, width = 12, height = 6)
-
-
-
+```

@@ -1,0 +1,110 @@
+---
+title: "HCC_PDL"
+# runtime: shiny
+output: 
+  html_document:
+    code_folding: show
+    theme:
+      color-contrast-warnings: false
+      bg: "#F5F5F5"
+      fg: "#333333"
+      primary: "#4CAF50"
+      secondary: "#FF9800"
+      base_font:
+        google: "Open Sans"
+      heading_font:
+        google: "Open Sans"
+date: "20240929"
+author: Zhu Ni
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_knit$set(root.dir = "D:/Projects/CASH-Human/")
+opts_chunk$set(message = FALSE, warning = FALSE)
+setwd("D:/Projects/CASH-Human/")
+getwd()
+```
+
+# 1. library
+
+```{r}
+library(limma)
+library(sva)
+library(AUCell)
+```
+
+# 2. params
+
+```{r}
+dir_for_counts <- "./data/expr_matrix/counts/"
+dir_for_gtf <- "./data/gtf.rds"
+## load data
+file.list <- list.files(dir_for_counts)
+counts.list <- list()
+for (i_file in file.list) {
+  print(i_file)
+  counts.list[[i_file]] <- read.csv(file.path(dir_for_counts, i_file), sep = "\t", row.names = 1)
+  ## convert Ensembl to symbol
+  gtf <- readRDS(dir_for_gtf)
+  gene_mapping <- gtf[match(rownames(counts.list[[i_file]]), gtf$gene_id),]
+  gene_mapping <- na.omit(gene_mapping)
+  gene_mapping_unique <- gene_mapping[!duplicated(gene_mapping$gene_name), ]
+  counts.list[[i_file]] <- counts.list[[i_file]][gene_mapping_unique$gene_id, ]
+  rownames(counts.list[[i_file]]) <- gene_mapping_unique$gene_name
+  rm(gtf, gene_mapping, gene_mapping_unique)
+  
+  # counts.list[[i_file]] <- normalizeBetweenArrays(counts.list[[i_file]])
+}
+```
+
+# 3. preprocess
+
+```{r}
+gene <- intersect(rownames(counts.list[["HCC_PD1_1.txt"]]), rownames(counts.list[["HCC_PD1_2.txt"]]))
+expr <- cbind(counts.list[["HCC_PD1_1.txt"]][gene, ], counts.list[["HCC_PD1_2.txt"]][gene, ])
+# boxplot(expr, outline = F, notch = T, las = 2)
+
+batch <- c(rep(1, ncol(counts.list[["HCC_PD1_1.txt"]])), 
+           rep(2, ncol(counts.list[["HCC_PD1_2.txt"]])))
+expr_merged <- ComBat_seq(as.matrix(expr), batch = batch)
+# boxplot(expr_merged, outline = F, notch = T, las = 2)
+```
+
+```{r}
+library(FactoMineR)
+library(factoextra)
+condition <- data.frame(sample = colnames(expr_merged),
+                        batch = batch)
+condition$batch <- as.factor(condition$batch)
+pre.pca <- PCA(t(expr_merged),graph = F)
+fviz_pca_ind(pre.pca,
+             col.ind = condition$batch,
+             geom = c("point", "text"),
+             addEllipses = T) +
+  scale_color_discrete(name = "Batch")
+```
+
+# 4. group by AUCell_score
+```{r}
+geneSets <- c("TIMD4", "ITLN1", "MARCO", "CETP", "IFI27",
+              "NDST3", "ITGAD", "FABP3", "BCAM", "CD5L", 
+              "VCAM1", "C2", "EXT1", "SDC3", "HK3", 
+              "ALDH1A1", "PELATON", "SLC7A8", "RND3", "MT1F")
+geneSets <- intersect(geneSets, row.names(expr_merged))
+length(geneSets)
+
+cells_rankings <- AUCell_buildRankings(as.matrix(expr_merged), plotStats = TRUE)
+cells_AUC <- AUCell_calcAUC(geneSets, cells_rankings)
+auc_scores <- getAUC(cells_AUC)
+
+median_score <- median(auc_scores, na.rm = TRUE)
+group <- factor(ifelse(auc_scores > median_score, "high", "low"), 
+                   levels = c("low", "high"))
+
+#
+expr2 <- data.frame(t(expr_merged), scoreGroup = group)
+expr2 <- expr2[, c(ncol(expr2), 1:(ncol(expr2) - 1))]
+
+print(t(data.frame(sample = rownames(expr2), ScoreGroup = expr2$scoreGroup)))
+```
